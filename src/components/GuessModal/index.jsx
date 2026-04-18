@@ -1,131 +1,131 @@
 // src/components/GuessModal/index.jsx
 import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
+import { useNavigate } from 'react-router-dom';
 
-// Harita tıklamalarını yakalayan ufak bileşen
 const LocationMarker = ({ position, setPosition }) => {
-  useMapEvents({
-    click(e) {
-      setPosition(e.latlng);
-    },
-  });
+  useMapEvents({ click(e) { setPosition(e.latlng); } });
   return position === null ? null : <Marker position={position}></Marker>;
 };
 
 export default function GuessModal({ isOpen, onClose, suspects }) {
+  const navigate = useNavigate();
   const [selectedSuspect, setSelectedSuspect] = useState('');
   const [guessPosition, setGuessPosition] = useState(null);
-  const [result, setResult] = useState(null);
+  const [gameState, setGameState] = useState('playing'); // 'playing', 'success', 'failed'
+  const [distance, setDistance] = useState(null);
 
   if (!isOpen) return null;
 
-  // --- OYUNUN GİZLİ KURALLARI ---
-  const SECRET_SUSPECT = "kağan"; // Küçük harfle yazıyoruz kontrol için
-  const SECRET_LOCATION = { lat: 39.9392, lng: 32.8643 }; // Ankara Kalesi
-  const SUCCESS_RADIUS_KM = 2; // 2 Km yakınına tıklarsa kabul et
+  // HEDEF VERİLERİ
+  const TARGET = {
+    suspect: "kağan",
+    lat: 39.9392,
+    lng: 32.8643, // Ankara Kalesi
+    radius: 1.5 // 1.5 km tolerans
+  };
 
-  // Haversine Formülü: Dünya üzerindeki iki nokta arası gerçek kuş uçuşu mesafe (KM)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    return R * c; 
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
   const handleVerify = () => {
-    if (!selectedSuspect || !guessPosition) {
-      setResult({ status: 'error', message: 'Lütfen hem faili seçin hem de haritadan lokasyon işaretleyin.' });
-      return;
-    }
+    if (!selectedSuspect || !guessPosition) return;
 
-    const distance = calculateDistance(SECRET_LOCATION.lat, SECRET_LOCATION.lng, guessPosition.lat, guessPosition.lng);
-    const isSuspectCorrect = selectedSuspect.toLowerCase().trim() === SECRET_SUSPECT;
-    const isLocationCorrect = distance <= SUCCESS_RADIUS_KM;
+    const d = calculateDistance(TARGET.lat, TARGET.lng, guessPosition.lat, guessPosition.lng);
+    setDistance(d);
 
-    if (isSuspectCorrect && isLocationCorrect) {
-      setResult({ 
-        status: 'success', 
-        message: `GÖREV BAŞARILI! Fail Kağan tespit edildi ve Podo, hedef noktanın ${distance.toFixed(1)} km yakınında sağ olarak bulundu.` 
-      });
-    } else if (!isSuspectCorrect && isLocationCorrect) {
-      setResult({ status: 'warning', message: `LOKASYON DOĞRU, FAİL YANLIŞ! Hedefi buldunuz ama masum birini suçluyorsunuz.` });
-    } else if (isSuspectCorrect && !isLocationCorrect) {
-      setResult({ status: 'warning', message: `FAİL DOĞRU, LOKASYON YANLIŞ! Kağan'ın arkasında olduğu kesin ama hedef bölgeden ${distance.toFixed(1)} km uzaktasınız.` });
+    if (selectedSuspect.toLowerCase() === TARGET.suspect && d <= TARGET.radius) {
+      setGameState('success');
     } else {
-      setResult({ status: 'failed', message: `GÖREV BAŞARISIZ! Tamamen yanlış iz üzerindesiniz.` });
+      setGameState('failed');
     }
   };
 
+  // OYUN SONU: TEBRİKLER EKRANI
+  if (gameState === 'success') {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950 p-6 text-center animate-in fade-in duration-500">
+        <div className="max-w-md w-full">
+          <div className="text-8xl mb-6">🎉</div>
+          <h1 className="text-4xl font-black text-white mb-4 uppercase tracking-tighter">Operasyon Başarılı!</h1>
+          <p className="text-slate-400 mb-8 leading-relaxed">
+            Harika iş çıkardın dedektif! <span className="text-white font-bold">Kağan</span> kıskıvrak yakalandı ve Podo, <span className="text-white font-bold">Ankara Kalesi</span> civarında sağ salim bulundu. Hedefe sadece {distance.toFixed(2)} km mesafedeydin.
+          </p>
+          <button 
+            onClick={() => {
+              setGameState('playing');
+              navigate('/'); // Başlangıç ekranına dön
+            }}
+            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 transition-all"
+          >
+            YENİ GÖREVE BAŞLA
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
+      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white/20">
         
-        {/* Modal Başlık */}
-        <div className="bg-slate-900 p-6 flex justify-between items-center">
+        <div className="bg-slate-900 p-8 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-black text-white tracking-widest uppercase">Çözümü Bildir</h2>
-            <p className="text-slate-400 text-sm">Elde ettiğiniz istihbarat verilerini doğrulayın.</p>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Hedef Tespiti</h2>
+            <p className="text-slate-400 text-sm font-medium">Kanıtları birleştir ve operasyonu başlat.</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl font-light">&times;</button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-4xl font-light transition-colors">&times;</button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
-          {/* Adım 1: Faili Seç */}
-          <div className="mb-6">
-            <label className="block text-sm font-bold text-slate-700 uppercase mb-2">1. Birinci Derece Şüpheli (Fail)</label>
+        <div className="p-8 space-y-6">
+          {gameState === 'failed' && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 animate-bounce">
+              <span className="text-xl">⚠️</span>
+              <p className="text-red-700 text-sm font-bold">İstihbarat Hatalı! Fail veya Lokasyon uyuşmuyor. Tekrar dene.</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Faili Belirle</label>
             <select 
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
               value={selectedSuspect}
-              onChange={(e) => setSelectedSuspect(e.target.value)}
+              onChange={(e) => {
+                setSelectedSuspect(e.target.value);
+                setGameState('playing');
+              }}
             >
-              <option value="">-- Listeden Şüpheli Seçin --</option>
+              <option value="">-- Şüpheli Seç --</option>
               {suspects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
-          {/* Adım 2: Haritada İşaretle */}
-          <div className="mb-6">
-            <label className="block text-sm font-bold text-slate-700 uppercase mb-2">2. Podo'nun Saklandığı Lokasyon (Haritaya Tıkla)</label>
-            <div className="h-[300px] w-full rounded-xl overflow-hidden border-2 border-slate-200">
-              <MapContainer center={[39.9208, 32.8541]} zoom={11} style={{ height: '100%', width: '100%' }}>
+          <div>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Lokasyonu İşaretle (Ankara)</label>
+            <div className="h-[250px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+              <MapContainer center={[39.93, 32.85]} zoom={11} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <LocationMarker position={guessPosition} setPosition={setGuessPosition} />
+                <LocationMarker position={guessPosition} setPosition={(pos) => {
+                  setGuessPosition(pos);
+                  setGameState('playing');
+                }} />
               </MapContainer>
             </div>
-            {guessPosition && (
-              <p className="text-xs text-blue-600 mt-2 font-bold">📍 Koordinat Kilitlendi: {guessPosition.lat.toFixed(4)}, {guessPosition.lng.toFixed(4)}</p>
-            )}
           </div>
 
-          {/* Sonuç Ekranı */}
-          {result && (
-            <div className={`p-4 rounded-xl mb-6 border font-bold ${
-              result.status === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-              result.status === 'warning' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-              result.status === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
-              'bg-slate-50 text-slate-700 border-slate-200'
-            }`}>
-              {result.message}
-            </div>
-          )}
-        </div>
-
-        {/* Butonlar */}
-        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
-          <button onClick={onClose} className="px-6 py-3 font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">İptal Et</button>
           <button 
             onClick={handleVerify}
-            className="px-8 py-3 font-black text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-600/30 transition-colors uppercase tracking-wider"
+            disabled={!selectedSuspect || !guessPosition}
+            className="w-full py-5 bg-red-600 hover:bg-red-500 disabled:bg-slate-200 text-white font-black rounded-2xl shadow-lg shadow-red-600/20 transition-all uppercase tracking-widest"
           >
-            Karargaha İlet
+            Operasyonu Başlat
           </button>
         </div>
-
       </div>
     </div>
   );
