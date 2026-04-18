@@ -11,18 +11,18 @@ export default function PersonDetail() {
   const navigate = useNavigate();
   const [person, setPerson] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Varsayılan sekmeyi harita yapabilirsin veya Checkins bırakabilirsin, sana kalmış
   const [activeTab, setActiveTab] = useState('Map'); 
   
-  // 'Map' sekmesini başa ekledik
   const tabs = ['Map', 'Checkins', 'Messages', 'Sightings', 'Personal Notes', 'Anonymous Tips'];
 
-  // Sayfa yüklendiğinde veriyi çekip URL'deki ID'ye sahip şüpheliyi buluyoruz
   useEffect(() => {
     const loadPersonDetails = async () => {
       setIsLoading(true);
       try {
+        // ŞOV ANI: Yapay Gecikme (Artificial Delay)
+        // Skeleton tasarımımızı göstermek için sistemi bilerek 1.5 saniye (1500ms) bekletiyoruz
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
         const rawMultiData = await fetchAllJotformData();
         const unifiedPeopleList = aggregatePeopleData(rawMultiData);
         
@@ -43,15 +43,48 @@ export default function PersonDetail() {
     loadPersonDetails();
   }, [id]);
 
+  // --- SKELETON (İSKELET) BİLEŞENİ ---
+  // Sayfa yüklenirken dönecek olan jilet gibi sahte görünüm
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
-        <p className="text-slate-500 font-medium animate-pulse">Dosya Çözümleniyor...</p>
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-200 p-6 md:p-12 font-sans flex justify-center">
+        <div className="w-full max-w-5xl space-y-6">
+          
+          {/* Üst Kart Skeleton (Siyah Tema) */}
+          <div className="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-2xl animate-pulse">
+            <div className="w-24 h-4 bg-slate-800 rounded mb-6"></div> {/* Geri Butonu */}
+            <div className="w-1/3 h-10 bg-slate-800 rounded-xl mb-4"></div> {/* İsim */}
+            <div className="flex gap-4 mb-6"> {/* Rozetler */}
+              <div className="w-32 h-8 bg-slate-800 rounded-lg"></div>
+              <div className="w-40 h-8 bg-slate-800 rounded-lg"></div>
+              <div className="w-24 h-8 bg-slate-800 rounded-lg"></div>
+            </div>
+            <div className="w-full h-24 bg-slate-800/50 rounded-2xl border border-slate-700/50 mt-4"></div> {/* Progress Bar */}
+          </div>
+
+          {/* Sekmeler Skeleton */}
+          <div className="flex gap-3 animate-pulse overflow-hidden">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="w-32 h-12 bg-white rounded-xl border border-slate-200/50 shadow-sm"></div>
+            ))}
+          </div>
+
+          {/* İçerik Alanı Skeleton */}
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-pulse space-y-4">
+            <div className="w-48 h-8 bg-slate-100 rounded-lg mb-6"></div>
+            {[1, 2].map(i => (
+              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 h-32 flex flex-col gap-4">
+                <div className="w-1/4 h-4 bg-slate-200 rounded"></div>
+                <div className="w-full h-8 bg-slate-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Eğer kişi bulunamazsa
   if (!person) {
     return (
       <div className="text-center py-20">
@@ -61,10 +94,9 @@ export default function PersonDetail() {
     );
   }
 
-  // Aktif sekmeye ait kayıtları filtrele (Harita sekmesi hariç kullanılacak)
+  // (Aktif sekme kayıtları ve diğer tüm mantık kodları eskisi gibi devam ediyor)
   const activeRecords = person.allRecords.filter(record => record.formType === activeTab);
 
-  // --- RİSK ANALİZ ALGORİTMASI ---
   const calculateRiskScore = (records) => {
     let score = 0;
     records.forEach(record => {
@@ -87,10 +119,8 @@ export default function PersonDetail() {
     return 'bg-emerald-500 text-emerald-500';
   };
 
-  // --- TÜM KOORDİNATLARI TOPLAYAN VE JITTER (DAĞITMA) UYGULAYAN FONKSİYON ---
   const getAllMapPoints = () => {
     if (!person) return [];
-
     return person.allRecords.map(record => {
       const answers = Object.values(record.rawDetails);
       let lat = null;
@@ -116,7 +146,6 @@ export default function PersonDetail() {
       }
 
       if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-        // Test verileri üst üste binmesin diye mikroskobik sapma uyguluyoruz (Jitter)
         return { 
           lat: lat + (Math.random() - 0.5) * 0.002, 
           lng: lng + (Math.random() - 0.5) * 0.002, 
@@ -145,8 +174,8 @@ export default function PersonDetail() {
         </button>
 
         <h2 className={S.headerTitle}>{person.name}</h2>
-        <div className="flex gap-4 relative z-10 mt-2">
-          <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-700">
+        <div className="flex flex-wrap gap-4 relative z-10 mt-2">
+          <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-700 shadow-inner">
             Dosya ID: #{person.id.slice(-6)}
           </span>
           <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium border border-blue-500/30">
@@ -186,7 +215,6 @@ export default function PersonDetail() {
       {/* Menü: Form Sekmeleri */}
       <nav className={S.tabContainer}>
         {tabs.map(tab => {
-          // Eğer Map sekmesindeysek harita noktalarını say, değilse form kayıtlarını say
           const recordCount = tab === 'Map' 
             ? allMapPoints.length 
             : person.allRecords.filter(r => r.formType === tab).length;
@@ -212,14 +240,13 @@ export default function PersonDetail() {
       {/* İçerik Gösterim Alanı */}
       <div className={S.contentArea}>
         {activeTab === 'Map' ? (
-          // HARİTA SEKRESİ AKTİFSE
           <div className="space-y-4">
             <h3 className={S.contentTitle}>Kapsamlı İstihbarat Haritası</h3>
             {allMapPoints.length > 0 ? (
               <div className="animate-in fade-in duration-500">
                 <MapSection sightings={allMapPoints} />
                 <p className="text-xs text-slate-400 mt-3 italic text-center">
-                  * Şahsın tüm formlardan elde edilen dijital ayak izleri tek haritada birleştirilmiştir.
+                  * Şahsın tüm formlardan elde edilen dijital ayak izleri tek haritada birleştirilmiştir. Örtüşen lokasyonlara mikro dağılım (jitter) uygulanmıştır.
                 </p>
               </div>
             ) : (
@@ -231,7 +258,6 @@ export default function PersonDetail() {
             )}
           </div>
         ) : (
-          // DİĞER SEKMELER (FORM KAYITLARI) AKTİFSE
           <>
             <h3 className={S.contentTitle}>{activeTab} Raporları</h3>
             <div className="space-y-4">
@@ -254,7 +280,6 @@ export default function PersonDetail() {
                         {Object.values(record.rawDetails).map((ans, i) => {
                           if (!ans.text || !ans.answer) return null;
                           
-                          // Eğer gelen veri obje ise (örn: lat/lng) ekranda patlamaması için string'e çeviriyoruz
                           const displayAnswer = typeof ans.answer === 'object' 
                             ? JSON.stringify(ans.answer) 
                             : ans.answer;
@@ -276,7 +301,6 @@ export default function PersonDetail() {
           </>
         )}
       </div>
-      
     </div>
   );
 }
