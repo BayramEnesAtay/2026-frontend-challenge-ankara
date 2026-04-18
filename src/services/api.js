@@ -1,7 +1,3 @@
-// src/services/api.js
-
-// .env dosyasındaki anahtarları bir dizi (array) içine alıyoruz. 
-// filter(Boolean) kısmı, eğer yedek key girilmemişse boş olanları siler.
 const API_KEYS = [
   import.meta.env.VITE_JOTFORM_KEY_PRIMARY,
   import.meta.env.VITE_JOTFORM_KEY_BACKUP_1,
@@ -10,16 +6,16 @@ const API_KEYS = [
   import.meta.env.VITE_JOTFORM_KEY_BACKUP_4
 ].filter(Boolean);
 
-// Sadece Form ID'lerimiz (Anahtarlara gerek kalmadı, onları yukarıdan dinamik alacağız)
+// Sadece Form ID'lerimiz 
 export const FORM_CONFIG = [
-  { type: 'Checkins', id: '261065067494966' }, // Senin gerçek Checkin ID'n
+  { type: 'Checkins', id: '261065067494966' }, 
   { type: 'Messages', id: '261065765723966' },
   { type: 'Sightings', id: '261065244786967' },
   { type: 'Personal Notes', id: '261065509008958' },
   { type: 'Anonymous Tips', id: '261065875889981' },
 ];
 
-// 🚀 ŞOV KISMI: Rate Limit'e Takılmayan Akıllı Fetch Fonksiyonu
+// Rate Limit'e Takılmayan Akıllı Fetch Fonksiyonu
 const safeFetchWithFallback = async (formId) => {
   // Elimizdeki tüm anahtarları sırayla deniyoruz
   for (let i = 0; i < API_KEYS.length; i++) {

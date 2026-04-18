@@ -1,5 +1,3 @@
-// src/pages/PersonDetail/styles.js
-
 export const wrapper = "max-w-5xl mx-auto px-4 py-8";
 export const headerCard = "bg-slate-900 rounded-3xl p-8 mb-8 text-white shadow-xl relative overflow-hidden";
 export const headerTitle = "text-4xl font-black mb-2 relative z-10";

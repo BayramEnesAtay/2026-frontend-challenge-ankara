@@ -1,4 +1,3 @@
-// src/pages/PersonDetail/index.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchAllJotformData } from '../../services/api.js';
@@ -16,7 +15,7 @@ export default function PersonDetail() {
   const tabs = ['Map', 'Checkins', 'Messages', 'Sightings', 'Personal Notes', 'Anonymous Tips'];
 
   useEffect(() => {
-    // 1. ŞOV ANI: Sayfa açıldığında otomatik olarak en üste kaydır!
+   
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     const loadPersonDetails = async () => {
@@ -60,7 +59,7 @@ export default function PersonDetail() {
             <div className="w-full h-24 bg-slate-800/50 rounded-2xl border border-slate-700/50 mt-4"></div> 
           </div>
 
-          {/* SKELETON SEKMELER: flex-wrap eklendi */}
+          
           <div className="flex flex-wrap gap-3 animate-pulse">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="w-32 h-12 bg-white rounded-xl border border-slate-200/50 shadow-sm"></div>
@@ -162,7 +161,7 @@ export default function PersonDetail() {
       <div className={S.headerCard}>
         <div className={S.headerDecoration}></div>
         
-        {/* 2. ŞOV ANI: navigate('/panel') Yönlendirmesi */}
+        
         <button 
           onClick={() => navigate('/panel')}
           className="text-slate-300 hover:text-white mb-6 text-sm font-semibold flex items-center gap-2 relative z-10 transition-colors"
@@ -172,7 +171,7 @@ export default function PersonDetail() {
 
         <h2 className={S.headerTitle}>{person.name}</h2>
         
-        {/* 3. ŞOV ANI: flex-wrap ile rozetlerin alt satıra geçmesini sağladık */}
+        
         <div className="flex flex-wrap gap-4 relative z-10 mt-2">
           <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-700 shadow-inner">
             Dosya ID: #{person.id.slice(-6)}

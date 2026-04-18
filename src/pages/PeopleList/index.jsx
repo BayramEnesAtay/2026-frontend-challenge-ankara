@@ -1,4 +1,3 @@
-// src/pages/PeopleList/index.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAllJotformData } from '../../services/api.js';
@@ -13,7 +12,7 @@ export default function PeopleList() {
   // Arama ve Filtreleme Stateleri
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tümü');
-  const [locationFilter, setLocationFilter] = useState('Tümü'); // YENİ: Konum Filtresi
+  const [locationFilter, setLocationFilter] = useState('Tümü'); 
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -33,7 +32,7 @@ export default function PeopleList() {
     loadData();
   }, []);
 
-  // YENİ: Jotform'dan gelen verilerdeki tüm benzersiz KONUMLARI bul
+  
   const availableLocations = useMemo(() => {
     const locations = new Set(people.map(p => p.location));
     return ['Tümü', ...Array.from(locations).filter(Boolean)];
@@ -56,7 +55,7 @@ export default function PeopleList() {
     });
   }, [people, debouncedSearchTerm, statusFilter, locationFilter]);
 
-  // ŞOV ANI: SKELETON KART BİLEŞENİ (Yüklenirken Gösterilecek)
+  // SKELETON KART BİLEŞENİ (Yüklenirken Gösterilecek)
   const SkeletonCard = () => (
     <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col h-full animate-pulse">
       <div className="flex justify-between items-start mb-6">
@@ -134,13 +133,13 @@ export default function PeopleList() {
         {/* İÇERİK ALANI */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {isLoading ? (
-            // Ekrana dönecek bir çark basmak yerine, 8 tane skeleton kartı basıyoruz
+            
             Array.from({ length: 8 }).map((_, index) => (
               <SkeletonCard key={index} />
             ))
           ) : filteredPeople.length > 0 ? (
             filteredPeople.map(person => (
-              // YENİ KART TASARIMI: Koyu Tema (Slate-900) ve Renkli Vurgular
+             
               <div key={person.id} className="group relative bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col h-full">
                 
                 {/* Kart içi hafif mavi parlama efekti */}
@@ -189,7 +188,7 @@ export default function PeopleList() {
       <GuessModal 
         isOpen={isGuessModalOpen} 
         onClose={() => setIsGuessModalOpen(false)} 
-        suspects={Array.from(new Set(people.map(p => p.name)))} // Jotformdaki isimleri listeler
+        suspects={Array.from(new Set(people.map(p => p.name)))} 
       />
     </div>
   );

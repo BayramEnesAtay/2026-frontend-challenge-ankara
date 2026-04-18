@@ -1,5 +1,3 @@
-// src/utils/jotformParser.js
-
 export const aggregatePeopleData = (multiFormData) => {
   if (!multiFormData || multiFormData.length === 0) return [];
 
@@ -51,7 +49,7 @@ export const aggregatePeopleData = (multiFormData) => {
       // Kişiyi bul ve yeni form verisini dosyasına ekle
       const personProfile = peopleMap.get(personName);
       
-      // Eğer bu formdan yeni bir konum geldiyse, eskisinin üstüne yaz (Son görülmeyi güncelle)
+      
       if (currentLocation !== "Konum Bilinmiyor") {
         personProfile.location = currentLocation;
       }

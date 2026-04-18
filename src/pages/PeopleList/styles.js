@@ -1,5 +1,3 @@
-// src/pages/PeopleList/styles.js
-
 export const container = "max-w-7xl mx-auto px-4 py-8";
 export const header = "flex flex-col md:flex-row justify-between items-center mb-10 gap-4";
 export const title = "text-4xl font-black text-slate-800 tracking-tight";

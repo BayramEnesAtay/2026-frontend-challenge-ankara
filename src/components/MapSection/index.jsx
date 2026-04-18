@@ -1,7 +1,6 @@
-// src/components/MapSection/index.jsx
 import React from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css'; // <-- BU İMPORTUN OLMASI ÇOK KRİTİK
+import 'leaflet/dist/leaflet.css'; 
 
 export default function MapSection({ sightings, isMultiColor = true }) {
   if (!sightings || sightings.length === 0) return null;
@@ -20,13 +19,13 @@ export default function MapSection({ sightings, isMultiColor = true }) {
   };
 
   return (
-    // DİKKAT: h-[400px] veya h-[500px] vererek haritaya kesin bir yükseklik tanımladık
+    // h-[400px] veya h-[500px] vererek haritaya kesin bir yükseklik tanımladık
     <div className="h-[450px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative z-0">
       <MapContainer 
         center={center} 
         zoom={13} 
-        scrollWheelZoom={true} // Mouse tekerleğiyle yakınlaştırmayı açtık
-        style={{ height: '100%', width: '100%' }} // React-Leaflet için şart
+        scrollWheelZoom={true} 
+        style={{ height: '100%', width: '100%' }}//parca parca degıl tum gozukmesını sagladık
       >
         <TileLayer 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 

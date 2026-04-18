@@ -1,4 +1,3 @@
-// src/components/GuessModal/index.jsx
 import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -54,7 +53,7 @@ export default function GuessModal({ isOpen, onClose, suspects }) {
           <div className="text-8xl mb-6">🎉</div>
           <h1 className="text-4xl font-black text-white mb-4 uppercase tracking-tighter">Operasyon Başarılı!</h1>
           <p className="text-slate-400 mb-8 leading-relaxed">
-            Harika iş çıkardın dedektif! <span className="text-white font-bold">Kağan</span> kıskıvrak yakalandı ve Podo, <span className="text-white font-bold">Ankara Kalesi</span> civarında sağ salim bulundu. Hedefe sadece {distance.toFixed(2)} km mesafedeydin.
+            Harika iş çıkardın dedektif! <span className="text-white font-bold">Kağan</span> yakalandı ve Podo, <span className="text-white font-bold">Ankara Kalesi</span> civarında sağ salim bulundu. Hedefe sadece {distance.toFixed(2)} km mesafedeydin.
           </p>
           <button 
             onClick={() => {
