@@ -62,6 +62,40 @@ export default function PersonDetail() {
   // Aktif sekmeye ait kayıtları filtrele
   const activeRecords = person.allRecords.filter(record => record.formType === activeTab);
 
+
+  // --- RİSK ANALİZ ALGORİTMASI ---
+  const calculateRiskScore = (records) => {
+    let score = 0;
+    records.forEach(record => {
+      if (record.formType === 'Anonymous Tips') score += 30; // İhbarlar çok şüpheli
+      if (record.formType === 'Messages') score += 15;       // Mesajlar orta şüpheli
+      if (record.formType === 'Sightings') score += 20;      // Görülmeler orta şüpheli
+      if (record.formType === 'Checkins') score += 5;        // Checkin normal aktivite
+      if (record.formType === 'Personal Notes') score += 10;
+    });
+    
+    // Skor maksimum 100 olabilir
+    return Math.min(score, 100); 
+  };
+
+  const riskScore = person ? calculateRiskScore(person.allRecords) : 0;
+  
+  // Podo'yu isminden tespit ediyoruz (Büyük/küçük harf duyarlılığını kaldırdık)
+  const isVictim = person?.name.toLowerCase().includes('podo');
+
+  // Skora göre renk belirleme (Eğer kurbansa Mavi/Mor tonları, Şüpheliyse Kırmızı/Yeşil)
+  const getRiskColor = (score) => {
+    if (isVictim) return 'bg-indigo-500 text-indigo-400'; // Podo için özel renk
+    
+    if (score >= 75) return 'bg-red-500 text-red-500';
+    if (score >= 40) return 'bg-orange-500 text-orange-500';
+    return 'bg-emerald-500 text-emerald-500';
+  };
+
+
+  
+ 
+
   return (
     <div className={S.wrapper}>
       
@@ -88,8 +122,34 @@ export default function PersonDetail() {
             Durum: {person.status}
           </span>
         </div>
-      </div>
 
+        {/* YENİ EKLENEN AKILLI ANALİZ ÇUBUĞU */}
+        <div className="relative z-10 bg-slate-950/50 p-5 rounded-2xl border border-slate-700/50 backdrop-blur-sm mt-4">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-slate-300 font-bold text-sm tracking-wide uppercase">
+              {isVictim ? 'Kayıp Şahıs İz Yoğunluğu' : 'Yapay Zeka Risk Analizi'}
+            </span>
+            <span className={`text-2xl font-black ${getRiskColor(riskScore).split(' ')[1]}`}>
+              %{riskScore}
+            </span>
+          </div>
+          
+          {/* Çubuk (Track) */}
+          <div className="w-full bg-slate-800 rounded-full h-3 border border-slate-700 overflow-hidden">
+            {/* Dolgu (Fill) */}
+            <div 
+              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(0,0,0,0.5)] ${getRiskColor(riskScore).split(' ')[0]}`}
+              style={{ width: `${riskScore}%` }}
+            ></div>
+          </div>
+          
+          <p className="text-xs text-slate-400 mt-3 font-medium">
+            {isVictim 
+              ? `* Podo'nun sistemde bıraktığı ${person.allRecords.length} adet dijital ayak izi analiz ediliyor.` 
+              : `* Puanlama, şüphelinin ${person.allRecords.length} adet sistem kaydının ağırlığına göre otomatik hesaplanmıştır.`}
+          </p>
+        </div>
+      </div>
       {/* Menü: Form Sekmeleri */}
       <nav className={S.tabContainer}>
         {tabs.map(tab => {
