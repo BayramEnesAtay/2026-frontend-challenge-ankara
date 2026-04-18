@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom';
 import { fetchAllJotformData } from '../../services/api.js';
 import { aggregatePeopleData } from '../../utils/jotformParser.js';
 import useDebounce from '../../hooks/useDebounce.js';
+import GuessModal from '../../components/GuessModal';
 
 export default function PeopleList() {
   const [people, setPeople] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [isGuessModalOpen, setIsGuessModalOpen] = useState(false);
   // Arama ve Filtreleme Stateleri
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tümü');
@@ -123,6 +124,11 @@ export default function PeopleList() {
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">▼</span>
             </div>
           </div>
+          <button 
+            onClick={() => setIsGuessModalOpen(true)}
+            className="bg-red-600 hover:bg-red-500 text-white font-black px-6 py-3 rounded-2xl shadow-lg shadow-red-600/30 transition-all uppercase tracking-widest text-sm">
+          🚨 Hedefi Tespit Et
+          </button>
         </header>
 
         {/* İÇERİK ALANI */}
@@ -180,6 +186,11 @@ export default function PeopleList() {
           )}
         </div>
       </div>
+      <GuessModal 
+        isOpen={isGuessModalOpen} 
+        onClose={() => setIsGuessModalOpen(false)} 
+        suspects={Array.from(new Set(people.map(p => p.name)))} // Jotformdaki isimleri listeler
+      />
     </div>
   );
 }
