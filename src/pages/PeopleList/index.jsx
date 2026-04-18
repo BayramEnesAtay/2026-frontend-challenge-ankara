@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import * as S from './styles.js';
-
+import { fetchAllJotformData } from '../../services/api.js';
+import { aggregatePeopleData } from '../../utils/jotformParser.js';
 export default function PeopleList() {
   const [people, setPeople] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -10,28 +11,24 @@ export default function PeopleList() {
 
   // Sayfa ilk açıldığında Jotform'dan verileri çekiyoruz
   useEffect(() => {
-    const fetchPeople = async () => {
-      try {
-        // TODO: API key ve URL buraya eklenecek. Şimdilik mock data basıyoruz.
-        const mockData = [
-          { id: 1, name: 'Ahmet Yılmaz', location: 'Kızılay Meydanı', status: 'Şüpheli' },
-          { id: 2, name: 'Mehmet Demir', location: 'Tunalı Hilmi', status: 'Temiz' },
-          { id: 3, name: 'Aslı Kaya', location: 'Bilkent Center', status: 'Aranıyor' },
-        ];
-        
-        // Veri geliyormuş hissi vermek için ufak bir gecikme ekledik
-        setTimeout(() => {
-          setPeople(mockData);
-          setIsLoading(false);
-        }, 800);
-
-      } catch (error) {
-        console.error("Veri çekilirken patladık:", error);
-        setIsLoading(false);
-      }
+    const loadData = async () => {
+      setIsLoading(true);
+      
+      // 1. Tüm 5 formdan verileri aynı anda çek
+      const rawMultiData = await fetchAllJotformData();
+      
+      // Mülakatta verinin ne geldiğini görmek için konsola basalım
+      console.log("🔥 5 FORMDAN GELEN HAM VERİ:", rawMultiData);
+      
+      // 2. Verileri kişilere göre birleştir ve temizle
+      const unifiedPeopleList = aggregatePeopleData(rawMultiData);
+      console.log("✅ BİRLEŞTİRİLMİŞ TEMİZ VERİ:", unifiedPeopleList);
+      
+      setPeople(unifiedPeopleList);
+      setIsLoading(false);
     };
 
-    fetchPeople();
+    loadData();
   }, []);
 
   // Kullanıcı arama kutusuna bir şey yazdığında listeyi anında daraltıyoruz

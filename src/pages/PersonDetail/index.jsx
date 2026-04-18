@@ -1,22 +1,66 @@
 // src/pages/PersonDetail/index.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { fetchAllJotformData } from '../../services/api.js';
+import { aggregatePeopleData } from '../../utils/jotformParser.js';
 import * as S from './styles.js';
 
 export default function PersonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Hangi sekmenin (formun) aktif olduğunu tutan state
+  const [person, setPerson] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Checkins');
   
-  // Jotform'daki form isimlerimiz
   const tabs = ['Checkins', 'Messages', 'Sightings', 'Personal Notes', 'Anonymous Tips'];
 
-  // Geri dönüş butonu işlevi
-  const handleGoBack = () => {
-    navigate(-1);
-  };
+  // Sayfa yüklendiğinde veriyi çekip URL'deki ID'ye sahip şüpheliyi buluyoruz
+  useEffect(() => {
+    const loadPersonDetails = async () => {
+      setIsLoading(true);
+      try {
+        const rawMultiData = await fetchAllJotformData();
+        const unifiedPeopleList = aggregatePeopleData(rawMultiData);
+        
+        // URL'den gelen ID ile eşleşen kişiyi bul
+        const foundPerson = unifiedPeopleList.find(p => p.id === id);
+        
+        if (foundPerson) {
+          setPerson(foundPerson);
+        } else {
+          console.error("Kişi bulunamadı!");
+        }
+      } catch (error) {
+        console.error("Detaylar çekilirken hata:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPersonDetails();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+        <p className="text-slate-500 font-medium animate-pulse">Dosya Çözümleniyor...</p>
+      </div>
+    );
+  }
+
+  if (!person) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold text-red-600">Dosya Bulunamadı</h2>
+        <button onClick={() => navigate('/')} className="mt-4 text-blue-500 underline">Listeye Dön</button>
+      </div>
+    );
+  }
+
+  // Aktif sekmeye ait kayıtları filtrele
+  const activeRecords = person.allRecords.filter(record => record.formType === activeTab);
 
   return (
     <div className={S.wrapper}>
@@ -25,47 +69,88 @@ export default function PersonDetail() {
       <div className={S.headerCard}>
         <div className={S.headerDecoration}></div>
         
-        {/* Şık bir geri dönüş butonu */}
         <button 
-          onClick={handleGoBack}
+          onClick={() => navigate('/')}
           className="text-slate-300 hover:text-white mb-6 text-sm font-semibold flex items-center gap-2 relative z-10 transition-colors"
         >
           ← Listeye Dön
         </button>
 
-        <h2 className={S.headerTitle}>Şüpheli Dosyası #{id}</h2>
-        <p className={S.headerSubtitle}>Sistem Kayıt Tarihi: 18.04.2026</p>
+        <h2 className={S.headerTitle}>{person.name}</h2>
+        <div className="flex gap-4 relative z-10 mt-2">
+          <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-sm font-medium border border-slate-700">
+            Dosya ID: #{person.id.slice(-6)}
+          </span>
+          <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium border border-blue-500/30">
+            Son Görülme: {person.location}
+          </span>
+          <span className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-lg text-sm font-medium border border-orange-500/30">
+            Durum: {person.status}
+          </span>
+        </div>
       </div>
 
       {/* Menü: Form Sekmeleri */}
       <nav className={S.tabContainer}>
-        {tabs.map(tab => (
-          <button 
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`
-              ${S.tabBtnBase} 
-              ${activeTab === tab ? S.tabActive : S.tabInactive}
-            `}
-          >
-            {tab}
-          </button>
-        ))}
+        {tabs.map(tab => {
+          // O sekmede kaç tane kayıt olduğunu hesapla
+          const recordCount = person.allRecords.filter(r => r.formType === tab).length;
+          
+          return (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`
+                ${S.tabBtnBase} flex items-center gap-2
+                ${activeTab === tab ? S.tabActive : S.tabInactive}
+              `}
+            >
+              {tab}
+              <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                {recordCount}
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
       {/* İçerik Gösterim Alanı */}
       <div className={S.contentArea}>
-        <h3 className={S.contentTitle}>{activeTab} Kayıtları</h3>
+        <h3 className={S.contentTitle}>{activeTab} Raporları</h3>
         
-        {/* Seçilen sekmeye göre değişecek olan alan. 
-            İleride buraya activeTab değerine göre ilgili Jotform yanıtlarını map'leyeceğiz. */}
         <div className="space-y-4">
-          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-            <p className="text-xs text-blue-600 font-bold tracking-wider mb-2">SİSTEM MESAJI</p>
-            <p className="text-slate-700">
-              Bu alanda <span className="font-bold">{activeTab}</span> formuna ait Jotform verileri listelenecektir. API bağlandığında bu statik metin yerini dinamik kayıtlara bırakacak.
-            </p>
-          </div>
+          {activeRecords.length === 0 ? (
+            <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 text-center">
+              <p className="text-slate-500 font-medium">Bu kategoriye ait herhangi bir kayıt bulunamadı.</p>
+            </div>
+          ) : (
+            // Kayıtları tarihe göre (en yeni en üstte) sıralayıp ekrana basıyoruz
+            activeRecords
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .map((record, index) => (
+                <div key={index} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="border-b border-slate-100 pb-3 mb-3 flex justify-between items-center">
+                    <p className="text-sm font-bold text-blue-600">
+                      Sistem Kaydı: {new Date(record.createdAt).toLocaleString('tr-TR')}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Jotform'dan gelen soru ve cevapları döngüyle basıyoruz */}
+                    {Object.values(record.rawDetails).map((ans, i) => {
+                      if (!ans.text || !ans.answer) return null; // Boş soruları atla
+                      
+                      return (
+                        <div key={i} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <span className="block text-xs font-bold text-slate-400 uppercase mb-1">{ans.text}</span>
+                          <span className="block text-sm text-slate-800 font-medium">{ans.answer}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+            ))
+          )}
         </div>
       </div>
       
