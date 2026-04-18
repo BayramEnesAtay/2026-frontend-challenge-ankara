@@ -4,16 +4,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchAllJotformData } from '../../services/api.js';
 import { aggregatePeopleData } from '../../utils/jotformParser.js';
 import * as S from './styles.js';
+import MapSection from '../../components/MapSection/index.jsx';
 
 export default function PersonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
   const [person, setPerson] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('Checkins');
   
-  const tabs = ['Checkins', 'Messages', 'Sightings', 'Personal Notes', 'Anonymous Tips'];
+  // Varsayılan sekmeyi harita yapabilirsin veya Checkins bırakabilirsin, sana kalmış
+  const [activeTab, setActiveTab] = useState('Map'); 
+  
+  // 'Map' sekmesini başa ekledik
+  const tabs = ['Map', 'Checkins', 'Messages', 'Sightings', 'Personal Notes', 'Anonymous Tips'];
 
   // Sayfa yüklendiğinde veriyi çekip URL'deki ID'ye sahip şüpheliyi buluyoruz
   useEffect(() => {
@@ -23,7 +26,6 @@ export default function PersonDetail() {
         const rawMultiData = await fetchAllJotformData();
         const unifiedPeopleList = aggregatePeopleData(rawMultiData);
         
-        // URL'den gelen ID ile eşleşen kişiyi bul
         const foundPerson = unifiedPeopleList.find(p => p.id === id);
         
         if (foundPerson) {
@@ -59,42 +61,74 @@ export default function PersonDetail() {
     );
   }
 
-  // Aktif sekmeye ait kayıtları filtrele
+  // Aktif sekmeye ait kayıtları filtrele (Harita sekmesi hariç kullanılacak)
   const activeRecords = person.allRecords.filter(record => record.formType === activeTab);
-
 
   // --- RİSK ANALİZ ALGORİTMASI ---
   const calculateRiskScore = (records) => {
     let score = 0;
     records.forEach(record => {
-      if (record.formType === 'Anonymous Tips') score += 30; // İhbarlar çok şüpheli
-      if (record.formType === 'Messages') score += 15;       // Mesajlar orta şüpheli
-      if (record.formType === 'Sightings') score += 20;      // Görülmeler orta şüpheli
-      if (record.formType === 'Checkins') score += 5;        // Checkin normal aktivite
+      if (record.formType === 'Anonymous Tips') score += 30;
+      if (record.formType === 'Messages') score += 15;
+      if (record.formType === 'Sightings') score += 20;
+      if (record.formType === 'Checkins') score += 5;
       if (record.formType === 'Personal Notes') score += 10;
     });
-    
-    // Skor maksimum 100 olabilir
     return Math.min(score, 100); 
   };
 
   const riskScore = person ? calculateRiskScore(person.allRecords) : 0;
-  
-  // Podo'yu isminden tespit ediyoruz (Büyük/küçük harf duyarlılığını kaldırdık)
   const isVictim = person?.name.toLowerCase().includes('podo');
 
-  // Skora göre renk belirleme (Eğer kurbansa Mavi/Mor tonları, Şüpheliyse Kırmızı/Yeşil)
   const getRiskColor = (score) => {
-    if (isVictim) return 'bg-indigo-500 text-indigo-400'; // Podo için özel renk
-    
+    if (isVictim) return 'bg-indigo-500 text-indigo-400';
     if (score >= 75) return 'bg-red-500 text-red-500';
     if (score >= 40) return 'bg-orange-500 text-orange-500';
     return 'bg-emerald-500 text-emerald-500';
   };
 
+  // --- TÜM KOORDİNATLARI TOPLAYAN VE JITTER (DAĞITMA) UYGULAYAN FONKSİYON ---
+  const getAllMapPoints = () => {
+    if (!person) return [];
 
-  
- 
+    return person.allRecords.map(record => {
+      const answers = Object.values(record.rawDetails);
+      let lat = null;
+      let lng = null;
+
+      for (const ans of answers) {
+        if (!ans || !ans.answer) continue;
+
+        if (typeof ans.answer === 'object' && ans.answer.lat && ans.answer.lng) {
+          lat = parseFloat(ans.answer.lat);
+          lng = parseFloat(ans.answer.lng);
+          break;
+        }
+
+        if (typeof ans.answer === 'string') {
+          const coordMatch = ans.answer.match(/(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)/);
+          if (coordMatch) {
+            lat = parseFloat(coordMatch[1]);
+            lng = parseFloat(coordMatch[3]);
+            break;
+          }
+        }
+      }
+
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        // Test verileri üst üste binmesin diye mikroskobik sapma uyguluyoruz (Jitter)
+        return { 
+          lat: lat + (Math.random() - 0.5) * 0.002, 
+          lng: lng + (Math.random() - 0.5) * 0.002, 
+          type: record.formType,
+          date: record.createdAt 
+        };
+      }
+      return null;
+    }).filter(point => point !== null);
+  };
+
+  const allMapPoints = getAllMapPoints();
 
   return (
     <div className={S.wrapper}>
@@ -123,7 +157,7 @@ export default function PersonDetail() {
           </span>
         </div>
 
-        {/* YENİ EKLENEN AKILLI ANALİZ ÇUBUĞU */}
+        {/* Akıllı Analiz Çubuğu */}
         <div className="relative z-10 bg-slate-950/50 p-5 rounded-2xl border border-slate-700/50 backdrop-blur-sm mt-4">
           <div className="flex justify-between items-center mb-3">
             <span className="text-slate-300 font-bold text-sm tracking-wide uppercase">
@@ -134,9 +168,7 @@ export default function PersonDetail() {
             </span>
           </div>
           
-          {/* Çubuk (Track) */}
           <div className="w-full bg-slate-800 rounded-full h-3 border border-slate-700 overflow-hidden">
-            {/* Dolgu (Fill) */}
             <div 
               className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(0,0,0,0.5)] ${getRiskColor(riskScore).split(' ')[0]}`}
               style={{ width: `${riskScore}%` }}
@@ -150,11 +182,14 @@ export default function PersonDetail() {
           </p>
         </div>
       </div>
+
       {/* Menü: Form Sekmeleri */}
       <nav className={S.tabContainer}>
         {tabs.map(tab => {
-          // O sekmede kaç tane kayıt olduğunu hesapla
-          const recordCount = person.allRecords.filter(r => r.formType === tab).length;
+          // Eğer Map sekmesindeysek harita noktalarını say, değilse form kayıtlarını say
+          const recordCount = tab === 'Map' 
+            ? allMapPoints.length 
+            : person.allRecords.filter(r => r.formType === tab).length;
           
           return (
             <button 
@@ -165,7 +200,7 @@ export default function PersonDetail() {
                 ${activeTab === tab ? S.tabActive : S.tabInactive}
               `}
             >
-              {tab}
+              {tab === 'Map' ? '🗺️ Harita Merkezi' : tab}
               <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
                 {recordCount}
               </span>
@@ -176,42 +211,70 @@ export default function PersonDetail() {
 
       {/* İçerik Gösterim Alanı */}
       <div className={S.contentArea}>
-        <h3 className={S.contentTitle}>{activeTab} Raporları</h3>
-        
-        <div className="space-y-4">
-          {activeRecords.length === 0 ? (
-            <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 text-center">
-              <p className="text-slate-500 font-medium">Bu kategoriye ait herhangi bir kayıt bulunamadı.</p>
-            </div>
-          ) : (
-            // Kayıtları tarihe göre (en yeni en üstte) sıralayıp ekrana basıyoruz
-            activeRecords
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-              .map((record, index) => (
-                <div key={index} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="border-b border-slate-100 pb-3 mb-3 flex justify-between items-center">
-                    <p className="text-sm font-bold text-blue-600">
-                      Sistem Kaydı: {new Date(record.createdAt).toLocaleString('tr-TR')}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Jotform'dan gelen soru ve cevapları döngüyle basıyoruz */}
-                    {Object.values(record.rawDetails).map((ans, i) => {
-                      if (!ans.text || !ans.answer) return null; // Boş soruları atla
-                      
-                      return (
-                        <div key={i} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          <span className="block text-xs font-bold text-slate-400 uppercase mb-1">{ans.text}</span>
-                          <span className="block text-sm text-slate-800 font-medium">{ans.answer}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+        {activeTab === 'Map' ? (
+          // HARİTA SEKRESİ AKTİFSE
+          <div className="space-y-4">
+            <h3 className={S.contentTitle}>Kapsamlı İstihbarat Haritası</h3>
+            {allMapPoints.length > 0 ? (
+              <div className="animate-in fade-in duration-500">
+                <MapSection sightings={allMapPoints} />
+                <p className="text-xs text-slate-400 mt-3 italic text-center">
+                  * Şahsın tüm formlardan elde edilen dijital ayak izleri tek haritada birleştirilmiştir.
+                </p>
+              </div>
+            ) : (
+              <div className="p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                <span className="text-4xl mb-3 block">📡</span>
+                <h4 className="font-bold text-slate-700 mb-1">Sinyal Bulunamadı</h4>
+                <p className="text-sm text-slate-500">Bu şahsa ait koordinat bazlı herhangi bir dijital ayak izi tespit edilemedi.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          // DİĞER SEKMELER (FORM KAYITLARI) AKTİFSE
+          <>
+            <h3 className={S.contentTitle}>{activeTab} Raporları</h3>
+            <div className="space-y-4">
+              {activeRecords.length === 0 ? (
+                <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 text-center">
+                  <p className="text-slate-500 font-medium">Bu kategoriye ait herhangi bir kayıt bulunamadı.</p>
                 </div>
-            ))
-          )}
-        </div>
+              ) : (
+                activeRecords
+                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .map((record, index) => (
+                    <div key={index} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="border-b border-slate-100 pb-3 mb-3 flex justify-between items-center">
+                        <p className="text-sm font-bold text-blue-600">
+                          Sistem Kaydı: {new Date(record.createdAt).toLocaleString('tr-TR')}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.values(record.rawDetails).map((ans, i) => {
+                          if (!ans.text || !ans.answer) return null;
+                          
+                          // Eğer gelen veri obje ise (örn: lat/lng) ekranda patlamaması için string'e çeviriyoruz
+                          const displayAnswer = typeof ans.answer === 'object' 
+                            ? JSON.stringify(ans.answer) 
+                            : ans.answer;
+
+                          return (
+                            <div key={i} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                              <span className="block text-xs font-bold text-slate-400 uppercase mb-1">{ans.text}</span>
+                              <span className="block text-sm text-slate-800 font-medium truncate" title={displayAnswer}>
+                                {displayAnswer}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
       
     </div>
