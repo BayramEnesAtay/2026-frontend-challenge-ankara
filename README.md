@@ -33,13 +33,13 @@ git clone [https://github.com/BayramEnesAtay/2026-frontend-challenge-ankara.git]
 cd 2026-frontend-challenge-ankara
 git checkout master
 
-2. Bağımlılıkları Yükleyin
+**2. Bağımlılıkları Yükleyin**
 Projeyi çalıştırmak için gerekli olan kütüphaneleri (React, Tailwind, React-Leaflet vb.) kurmak için projenin ana dizininde şu komutu çalıştırın: npm install
 
-3. Geliştirme Sunucusunu Başlatın
+**3. Geliştirme Sunucusunu Başlatın**
 Kurulum tamamlandıktan sonra projeyi ayağa kaldırmak için aşağıdaki komutu girin: npm run dev
 
-4. Projeyi Görüntüleyin
+**4. Projeyi Görüntüleyin**
 Terminalde beliren yerel sunucu adresine (genellikle http://localhost:5173) tıklayarak veya tarayıcınıza kopyalayarak uygulamayı kullanmaya başlayabilirsiniz. Sistem, "Görev Podo" başlangıç ekranı ile açılacak ve sizi doğrudan interaktif operasyona yönlendirecektir.
 
 # 🚀 Challenge Duyurusu
